@@ -102,11 +102,9 @@ poetry run python examples/coincidence.py
 
 ## Core Dependencies
 
+Standard python dependencies:
 -   [NumPy](https://numpy.org/): For numerical operations.
 -   [SciPy](https://scipy.org/): For scientific computing, particularly for data fitting.
 -   [Matplotlib](https://matplotlib.org/): For plotting and visualizations.
 -   [tqdm](https://github.com/tqdm/tqdm): For progress bars.
 
-## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for details.
