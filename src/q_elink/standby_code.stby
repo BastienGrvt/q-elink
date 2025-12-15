@@ -1,0 +1,152 @@
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from tqdm import tqdm
+
+def _fit_worker(i, param_name_list, param_bound_dict, get_init_val_fn, single_fit_fn):
+    param_init, param_min, param_max = get_init_val_fn()
+    try:
+        fit_result = single_fit_fn(param_init, param_min, param_max)
+    except Exception as e:
+        return i, {
+            "param_name_list": param_name_list,
+            "param_bound_dict": param_bound_dict,
+            "x_init": param_init,
+            "fit_result": {"error": str(e)},
+        }
+    return i, {
+        "param_name_list": param_name_list,
+        "param_bound_dict": param_bound_dict,
+        "x_init": param_init,
+        "fit_result": fit_result,
+    }
+
+def fit(self, n_fit: int, max_workers: int = None) -> None:
+    self._check_data_integrity()
+    self._build_data_exp_mat()
+
+    fit_result_dict = {}
+
+    # Préparer des wrapper simples pour passer les fonctions/pools
+    param_name_list = self.param_name_list
+    param_bound_dict = self.param_bound_dict
+    get_init_val_fn = self._get_init_val
+    single_fit_fn = self._single_fit
+
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(
+                _fit_worker,
+                i,
+                param_name_list,
+                param_bound_dict,
+                get_init_val_fn,
+                single_fit_fn,
+            ): i
+            for i in range(n_fit)
+        }
+
+        for future in tqdm(as_completed(futures), total=n_fit, desc="Fits"):
+            i, result = future.result()
+            fit_result_dict[f"fit_{i}"] = result
+
+    self.fit_result_dict = fit_result_dict
+
+
+
+
+
+
+    def _plot_normal_fit_on_axes(self, ax, name, normal_fit_result):
+        """Plots the normal fit curve and boundaries on a given axes object."""
+        mu = normal_fit_result['mean']
+        std = normal_fit_result['std']
+
+        # Plot the PDF of the fitted distribution
+        xmin, xmax = ax.get_xlim()
+        x = np.linspace(xmin, xmax, 100)
+        p = norm.pdf(x, mu, std)
+        
+        # Normalize PDF to its own maximum to scale with the histogram
+        if p.max() > 0:
+            p = p / p.max()
+
+        ax.plot(x, p, 'k--', linewidth=2, label='normal dist.')
+
+        # Calculate and plot boundaries
+        lower_bound = mu - 3 * std
+        upper_bound = mu + 3 * std
+
+        # Clip boundaries for eta parameters to [0, 1]
+        if name.startswith('eta'):
+            lower_bound = max(0, lower_bound)
+            upper_bound = min(1, upper_bound)
+
+        ax.axvline(lower_bound, color='r', linestyle=':', linewidth=2, label='3-sigma bound')
+        ax.axvline(upper_bound, color='r', linestyle=':', linewidth=2)
+        ax.legend()
+
+    def plot_histogram(self, data_fit, bins=100, normal_fit=False):
+        fit_param_name = data_fit['fit_param']['fit_param_name']
+        n_param = len(fit_param_name)
+        _, opti_param_dict, _ = self._build_fit_data(data_fit)
+        fig, axs = plt.subplots(n_param, 1, figsize=(10, 4 * n_param), squeeze=False)
+        axs = axs.ravel()
+
+        # Pre-calculate fit results if needed
+        if normal_fit:
+            normal_fit_result = self.get_normal_fit_results(data_fit)
+
+        for i, name in enumerate(fit_param_name):
+            ax = axs[i]
+            data = np.array(opti_param_dict[name])
+            label = name
+            # Based on _get_init_val, dc params are sampled in log space.
+            if name.startswith('dc'):
+                data = np.log10(data)
+                label = f"log10({name})"
+
+            # Normalize histogram to have a max height of 1
+            counts, _ = np.histogram(data, bins=bins)
+            max_count = np.max(counts) if len(counts) > 0 else 1
+            max_count = max(1, max_count) # Avoid division by zero
+            weights = np.ones_like(data) / max_count
+            ax.hist(data, bins=bins, weights=weights, label='Data')
+            
+            ax.set_title(f"Distribution of {name}")
+            ax.set_xlabel(label)
+            ax.set_ylabel("Normalized Distribution")
+            ax.grid(True)
+
+            if normal_fit and name in normal_fit_result:
+                self._plot_normal_fit_on_axes(ax, name, normal_fit_result[name])
+        plt.tight_layout()
+        return fig
+
+    def get_normal_fit_results(self, data_fit):
+        """
+        Fits a normal distribution to the optimized parameters from a fit result.
+        For parameters starting with 'dc_', the fit is performed on the log10 of the data.
+        """
+        fit_param_name = data_fit['fit_param']['fit_param_name']
+        fit_results = {}
+
+        _, opti_param_dict, _ = self._build_fit_data(data_fit)
+
+        for name in fit_param_name:
+            data = np.array(opti_param_dict[name])
+            if name.startswith('dc'):
+                data = np.log10(data)
+            mu, std = norm.fit(data)
+            fit_results[name] = {'mean': mu, 'std': std}
+
+        return fit_results
+
+
+
+
+        self.elink.alpha = self.alpha
+        self.elink.beta = self.beta
+        self.elink.eta_0 = self.param_dict["w_obs"]["eta_0"]
+        self.elink.eta_A = self.param_dict["w_obs"]["eta_A"]
+        self.elink.eta_B = self.param_dict["w_obs"]["eta_B"]
+        self.elink.dc_A = self.param_dict["w_obs"]["dc_A"]
+        self.elink.dc_B = self.param_dict["w_obs"]["dc_B"]

@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "q-elink"
+version = "0.1.0"
+description = "Quantum elementary link modelization."
+authors = ["bastiengrvt <bastien.grvt@proton.me>"]
+readme = "README.md"
+packages = [{ include = "q_elink", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.13"
+matplotlib = "^3.10.3"
+numpy = "^2.3.1"
+tqdm = "^4.67.1"
+scipy = "^1.16.1"
+rich = "^14.1.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
