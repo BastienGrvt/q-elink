@@ -76,7 +76,10 @@ class LocalProbaExperiment():
 
 
 class FitLocalProba():
-    def __init__(self):
+    def __init__(self, rng_seed = None):
+        self.rng_seed = rng_seed
+        self.rng = np.random.default_rng(self.rng_seed)
+
         # Data (set by the user via `set_model` and `set_data` and `set_init_value`)
         self.local_proba_mod = None
         self.local_proba_exp = None
@@ -128,6 +131,11 @@ class FitLocalProba():
 
     # Build methods
 
+    def _build_rng(self):
+        old_rng = self.rng
+        new_rng = old_rng.spawn(1)
+        self.rng = new_rng[0]
+
     def _build_param_name(self):
         self._fit_param_name = []
         self._fixed_param_name = []
@@ -175,14 +183,16 @@ class FitLocalProba():
 
     def _get_init_val(self):
         param_init, param_min, param_max = [], [], []
+        self._build_rng()
+        rng = self.rng
         for param_name in self._fit_param_name:
             value = self.init_val_dict[param_name]
             param_min.append(value[0])
             param_max.append(value[1])
             if param_name in ['eta_0', 'eta_A', 'eta_B']:
-                param_init.append(np.random.uniform(low=value[0], high=value[1]))
+                param_init.append(rng.uniform(low=value[0], high=value[1]))
             elif param_name in ['dc_0', 'dc_A', 'dc_B']:
-                param_init.append(10**np.random.uniform(low=np.log10(value[0]), high=np.log10(value[1])))
+                param_init.append(10**rng.uniform(low=np.log10(value[0]), high=np.log10(value[1])))
             else:
                 raise ValueError(f"Fitting parameter {param_name} not available account.")
         return param_init, param_min, param_max 
@@ -385,9 +395,31 @@ class FitDataProcess:
         }
         return processed_data
 
-    def save_data(self, data, path):
-        with open(path, 'w') as f:
-            json.dump(data, f)
+
+    def save_data(self, data_dict, save_path):
+        """
+        Saves a dictionary to a JSON file.
+        It handles numpy arrays and scipy.optimize.OptimizeResult objects.
+
+        Args:
+            data_dict (dict): The dictionary to save.
+            savepath (str): The path to save the JSON file.
+        """
+            
+        # JSON personal encoder for numpy variables
+        class NpEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, np.integer):
+                    return int(obj)
+                if isinstance(obj, np.floating):
+                    return float(obj)
+                if isinstance(obj, np.ndarray):
+                    return obj.tolist()
+                return super(NpEncoder, self).default(obj)
+
+        with open(save_path, 'w') as f:
+            json.dump(data_dict, f, cls=NpEncoder, indent=4)
+
 
     def plot_data(self, data_fit):
         init_param = data_fit["init_param"]
@@ -425,4 +457,43 @@ class FitDataProcess:
         plt.tight_layout()
         return fig
         
+    # Build and plot histogram function
+    def plot_histogram(self, data_fit, normal_param):
+        opti_param = data_fit["opti_param"]
+        n_plot = len(opti_param)
+        fig, axs = plt.subplots(n_plot, 1, figsize=(6, 4 * n_plot), squeeze=False)
+        axs = axs.ravel()
+        # Plot the parameters
+        for i, (name, _) in tqdm(enumerate(opti_param.items()), total=n_plot):
+            ax = axs[i]
+            data = opti_param[name]
+            normal_dist = normal_param[name]
+            mu, sigma = normal_dist["mu"], normal_dist["sigma"]
+            x_min, x_max = normal_dist["bounds"]
+            bins = normal_dist["bins"]
+            is_log = normal_dist["is_log"]
+            plot_name = normal_dist["plot_name"]
+            plot_data = np.log10(data) if is_log else data
+
+            # Plot histogram
+            counts, _, patches = ax.hist(plot_data, bins=bins, density=True)
+            counts /= np.max(counts)
+            for count, patch in zip(counts, patches):
+                patch.set_height(count)
+
+            # Normal distribution
+            x = np.linspace(x_min, x_max, 100)
+            y_norm = norm.pdf(x, mu, sigma)
+            if np.max(y_norm) > 0:
+                y_norm /= np.max(y_norm)
+            ax.plot(x, y_norm, 'k--', linewidth=2, label='Normal dist.')
+
+            ax.set_ylim([0, 1.2])
+            ax.set_xlim([x_min, x_max])
+            ax.set_xlabel(plot_name, fontsize=14)
+            ax.set_title(f"Fit of {plot_name}")
+            ax.legend(loc=1)
+            ax.grid()
+        plt.tight_layout()
+        return fig
 
