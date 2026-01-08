@@ -3,7 +3,7 @@ from ._imports import *
 from .elem_link_model import ElemLink, LocalProbaModel
 
 from scipy.optimize import least_squares
-
+from scipy.stats import norm
 
 @dataclass
 class LocalProbaExperiment():
@@ -176,6 +176,8 @@ class FitLocalProba():
             The param input must follow the same order than _fit_param_name list.
             """
         for name, value in zip(self._fit_param_name, param):
+            if name in ['dc_0', 'dc_A', 'dc_B']:
+                value = np.power(10, value)
             setattr(self.elink, name, value) # ToDo: use the elink.set_param() method instead
 
 
@@ -189,10 +191,12 @@ class FitLocalProba():
             value = self.init_val_dict[param_name]
             param_min.append(value[0])
             param_max.append(value[1])
-            if param_name in ['eta_0', 'eta_A', 'eta_B']:
+            # if param_name in ['eta_0', 'eta_A', 'eta_B']:
+            #     param_init.append(rng.uniform(low=value[0], high=value[1]))
+            # elif param_name in ['dc_0', 'dc_A', 'dc_B']:
+            #     param_init.append( np.power(10, rng.uniform(low=np.log10(value[0]), high=np.log10(value[1]))) )
+            if param_name in ['eta_0', 'eta_A', 'eta_B', 'dc_0', 'dc_A', 'dc_B']:
                 param_init.append(rng.uniform(low=value[0], high=value[1]))
-            elif param_name in ['dc_0', 'dc_A', 'dc_B']:
-                param_init.append(10**rng.uniform(low=np.log10(value[0]), high=np.log10(value[1])))
             else:
                 raise ValueError(f"Fitting parameter {param_name} not available account.")
         return param_init, param_min, param_max 
@@ -210,7 +214,8 @@ class FitLocalProba():
             return self.local_proba_mod.get_proba()
         data_model_mat = np.array([wrapper(p_A, p_B) for p_A, p_B in zip(self._p_A, self._p_B)])
         return data_model_mat.T        
-    
+   
+
     def _residual(self, param):
         """
         Create two (4 x _n_data) matrices for the experimental data and the model data.
@@ -358,51 +363,100 @@ class FitLocalProba():
 
 
 class FitDataProcess:
-    def __init__(self):
+    def __init__(self, data_raw=None):
+        self.data_raw = data_raw
+        self.data_processed = None
         pass
 
-
-    def load_data(self, path):
+    
+    def _check_processed_integrity(self):
         """
-        Loads a JSON file from a given path and returns it as a dictionary.
+        Check if the data has been loaded and prcessed.
+        TODO
+        """
+        if self.data_processed is None:
+            raise ValueError("Processed data not set, please set processed data with `self.load_data_processed() or `self.build_data()` first.")
+
+    def _check_raw_integrity(self):
+        """
+        Check if raw data has been loaded.
+        TODO: check dictionary tree intergity.
+        """
+        if self.data_raw is None:
+            raise ValueError("Raw data not set, please set raw data with `self.load_data_raw()` first.")
+
+    def load_data_raw(self, path):
+        """
+        Loads raw data JSON file from `FitLocalproba` and store it in `self.data_raw`.
         """
         with open(path, 'r') as f:
-            data = json.load(f)
-        return data
+            data_raw = json.load(f)
+        self.data_raw = data_raw
+        
 
-    def build_data(self, data_fit):
+    
+    def load_data_processed(self, path):
+        """
+        Loads processed data JSON file from `FitDataProcess` and store it in `self.data_processed`.
+        """
+        with open(path, 'r') as f:
+            data_processed = json.load(f)
+        self.data_processed = data_processed
+
+
+
+    def build_data(self):
         # Initialization
-        fit_param_name = data_fit['fit_param']['fit_param_name']
-        init_mse = []
-        opti_mse = []
-        init_param_dict = {name: [] for name in fit_param_name}
-        opti_param_dict = {name: [] for name in fit_param_name}
+        self._check_raw_integrity()
+        data_raw = self.data_raw
+        name_fit = data_raw['fit_param']['fit_param_name']
+        mse_init = []
+        mse_fitted = []
+        data_init_dict = {name: [] for name in name_fit}
+        data_fitted_dict = {name: [] for name in name_fit}
         # Span all the fits in the fit result dictionnary
-        for _, fit in data_fit['all_fit_result'].items():
+        for _, fit in data_raw['all_fit_result'].items():
             if 'error' not in fit['fit_result']:  # If no error in the fit
-                init_param = fit['init_param']  # Get the set of initial parameter of the fit
-                opti_param = fit['fit_result']['x']  # Get the set of optimized parameter of the fit
-                opti_mse.append(fit['fit_result']['cost'])
-                init_mse.append(fit['fit_result']['init_cost'])
-                for i, name in enumerate(fit_param_name):  # Span and store the parameters according to the `fit_param_name` order
-                    init_param_dict[name].append(init_param[i])
-                    opti_param_dict[name].append(opti_param[i])
-        processed_data = {
-            'init_param': init_param_dict,
-            'opti_param': opti_param_dict,
-            'init_mse': init_mse,
-            'opti_mse': opti_mse,
+                data_init = fit['init_param']  # Get the set of initial parameter of the fit
+                data_fitted = fit['fit_result']['x']  # Get the set of optimized parameter of the fit
+                mse_init.append(fit['fit_result']['init_cost'])
+                mse_fitted.append(fit['fit_result']['cost'])
+                for i, name in enumerate(name_fit):  # Span and store the parameters according to the `name_fit` order
+                    data_init_dict[name].append(data_init[i])
+                    data_fitted_dict[name].append(data_fitted[i])
+        # Draw statistics
+        statistics = {}
+        for name, fit_values in data_fitted_dict.items():
+            statistics[name] = {}
+            statistics[name]["mean"] = np.mean(fit_values)
+            statistics[name]["std"] = np.std(fit_values)
+        # Store data
+        self.data_processed = {
+            'statistics': statistics,
+            'data_init': data_init_dict,
+            'data_fitted': data_fitted_dict,
+            'mse_init': mse_init,
+            'mse_fitted': mse_fitted,
         }
-        return processed_data
 
+    def get_data(self):
+        if self.data_processed is not None:
+            return self.data_processed
+        else:
+            raise ValueError("Please first build the processed data with `build_data()`.")
 
-    def save_data(self, data_dict, save_path):
+    def get_stat(self):
+        if self.data_processed is not None:
+            return self.data_processed['statistics']
+        else:
+            raise ValueError("Please first build the processed data with `build_data()`.")
+
+    def save_data(self, save_path):
         """
         Saves a dictionary to a JSON file.
         It handles numpy arrays and scipy.optimize.OptimizeResult objects.
 
         Args:
-            data_dict (dict): The dictionary to save.
             savepath (str): The path to save the JSON file.
         """
             
@@ -417,36 +471,34 @@ class FitDataProcess:
                     return obj.tolist()
                 return super(NpEncoder, self).default(obj)
 
+        data_dict = self.data_processed
         with open(save_path, 'w') as f:
             json.dump(data_dict, f, cls=NpEncoder, indent=4)
 
 
-    def plot_data(self, data_fit):
-        init_param = data_fit["init_param"]
-        opti_param = data_fit["opti_param"]
-        init_mse = data_fit["init_mse"]
-        opti_mse = data_fit["opti_mse"]
-        n_plot = len(init_param)
-        fig, axs = plt.subplots(n_plot + 1, 1, figsize=(6, 4 * (n_plot + 1)), squeeze=False)
-        axs = axs.ravel()
-        # Plot MSE
-        axs[0].plot(init_mse, 'k+', label="initial")
-        axs[0].plot(opti_mse, '+', color='darkorange', label="fit")
-        axs[0].set_title("MSE")
-        axs[0].set_xlabel("$N$", fontsize=14)
-        axs[0].set_ylabel("MSE", fontsize=14)
-        axs[0].legend(loc=1)
-        axs[0].grid()
+    def plot_fit(self)
 
-        # Plot the parameters
-        for i, (name, _) in enumerate(init_param.items()):
+
+    def plot_shots(self):
+        self._check_processed_integrity()
+        # Get processed data
+        data_processed = self.data_processed
+        data_init = data_processed["data_init"]
+        data_fitted = data_processed["data_fitted"]
+        mse_init = data_processed["mse_init"]
+        mse_fitted = data_processed["mse_fitted"]
+        # Initialiaze the plit
+        n_plot = len(data_init) + 1
+        # fig, axs = plt.subplots(n_plot + 1, 1, figsize=(6, 4 * (n_plot + 1)), squeeze=False)
+        # axs = axs.ravel()
+        fig, axs = bst.create_centered_grid(3, 3, n_plot, plot_size=(5, 4))
+
+        # Plot the e-link parameters
+        for i, (name, _) in enumerate(data_init.items()):
             ax = axs[i+1]
-            if name.startswith('eta'):
-                ax.plot(init_param[name], 'k+', label="initial")
-                ax.plot(opti_param[name], '+', color='darkorange', label="fit")
-            elif name.startswith('dc'):
-                ax.semilogy(init_param[name], 'k+', label="initial")
-                ax.semilogy(opti_param[name], '+', color='darkorange', label="fit")
+            if name in ['eta_0', 'eta_A', 'eta_B', 'dc_0', 'dc_A', 'dc_B']:
+                ax.plot(data_init[name], 'k+', label="initial")
+                ax.plot(data_fitted[name], '+', color='darkorange', label="fit")
             else:
                 raise ValueError(f"Parameter {name} not known.")
             ax.set_ylabel(name, fontsize=14)
@@ -454,26 +506,39 @@ class FitDataProcess:
             ax.set_title(f"Fit of {name}")
             ax.legend(loc=1) 
             ax.grid()
-        plt.tight_layout()
+        # Plot MSE
+        axs[-1].plot(mse_init, 'k+', label="initial")
+        axs[-1].plot(mse_fitted, '+', color='darkorange', label="fit")
+        axs[-1].set_title("MSE")
+        axs[-1].set_xlabel("$N$", fontsize=14)
+        axs[-1].set_ylabel("MSE", fontsize=14)
+        axs[-1].legend(loc=1)
+        axs[-1].grid()
         return fig
         
     # Build and plot histogram function
-    def plot_histogram(self, data_fit, normal_param):
-        opti_param = data_fit["opti_param"]
-        n_plot = len(opti_param)
-        fig, axs = plt.subplots(n_plot, 1, figsize=(6, 4 * n_plot), squeeze=False)
-        axs = axs.ravel()
+    def plot_histogram(self, param_plot, param_gauss={}):
+        self._check_processed_integrity()
+        # Get the processed data
+        data_processed = self.data_processed
+        param_gauss = self.data_processed['statistics'] | param_gauss
+        data_fitted = data_processed['data_fitted']
+        # Initialize the plot
+        n_plot = len(param_gauss)
+        # fig, axs = plt.subplots(n_plot, 1, figsize=(6, 4 * n_plot), squeeze=False)
+        # axs = axs.ravel()
+        fig, axs = bst.create_centered_grid(2, 3, n_plot, plot_size=(5, 4))
         # Plot the parameters
-        for i, (name, _) in tqdm(enumerate(opti_param.items()), total=n_plot):
+        for i, (name, _) in enumerate(param_gauss.items()):
+            # Get single plot param and data
             ax = axs[i]
-            data = opti_param[name]
-            normal_dist = normal_param[name]
-            mu, sigma = normal_dist["mu"], normal_dist["sigma"]
-            x_min, x_max = normal_dist["bounds"]
-            bins = normal_dist["bins"]
-            is_log = normal_dist["is_log"]
-            plot_name = normal_dist["plot_name"]
-            plot_data = np.log10(data) if is_log else data
+            plot_data = data_fitted[name]
+            normal_dist = param_gauss[name]
+            plot_info = param_plot[name]
+            mu, sigma = normal_dist["mean"], normal_dist["std"]
+            x_min, x_max = plot_info["bounds"]
+            bins = plot_info["bins"]
+            plot_name = plot_info["plot_name"]
 
             # Plot histogram
             counts, _, patches = ax.hist(plot_data, bins=bins, density=True)
@@ -486,7 +551,8 @@ class FitDataProcess:
             y_norm = norm.pdf(x, mu, sigma)
             if np.max(y_norm) > 0:
                 y_norm /= np.max(y_norm)
-            ax.plot(x, y_norm, 'k--', linewidth=2, label='Normal dist.')
+            label = bst.sci_notation(mu, sigma, n=2)
+            ax.plot(x, y_norm, 'k--', linewidth=2, label='Normal dist. \n' + label)
 
             ax.set_ylim([0, 1.2])
             ax.set_xlim([x_min, x_max])
@@ -494,6 +560,5 @@ class FitDataProcess:
             ax.set_title(f"Fit of {plot_name}")
             ax.legend(loc=1)
             ax.grid()
-        plt.tight_layout()
         return fig
 
