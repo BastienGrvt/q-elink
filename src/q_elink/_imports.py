@@ -7,6 +7,8 @@ import json
 import matplotlib.pyplot as plt
 import math as m
 import numpy as np
+import scipy as sp
+import random as rnd
 
 # For iteration
 from itertools import product

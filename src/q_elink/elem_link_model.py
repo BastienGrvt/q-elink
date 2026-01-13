@@ -14,14 +14,21 @@ class ElemLink():
     dc_A: float = None
     dc_B: float = None
 
-    def set_param(self, param_dict):
+    def set_param(self, param_dict, log_dc=False):
         """Set parameters from dictionary."""
-        allowed_keys = ["p_A", "p_B", "eta_0", "eta_A", "eta_B", "dc_0", "dc_A", "dc_B"]
+        allowed_keys = [ "p_A", "p_B", "eta_0", "eta_A", "eta_B", "dc_0", "dc_A", "dc_B" ]
         for key in param_dict:
             if key in allowed_keys:
-                setattr(self, key, param_dict[key])
+                if log_dc and key in [ "dc_0", "dc_A", "dc_B" ]: 
+                    setattr(self, key, np.power(10, param_dict[key]))
+                else:
+                    setattr(self, key, param_dict[key])
             else:
                 warnings.warn(f"Uknown parameter: {key}.", UserWarning)
+
+    def set_pump(self, p_A=None, p_B=None):
+        bst.set_not_none(self, p_A=p_A, p_B=p_B)
+
 
     def check_integrity(self):
         """Check if the parameters have been set before any calculation.
@@ -247,10 +254,15 @@ class LocalProbaModel():
         pij_name = [r'$P_{00}$', r'$P_{01}$', r'$P_{10}$', r'$P_{11}$']
         p_min, p_max = p_bound
         p = np.linspace(p_min, p_max, n)
-        fig, axs = plt.subplots(2, 2, figsize=(16, 14), squeeze=False)
-        get_proba_vect = np.vectorize(self.get_proba)
-        proba_all = get_proba_vect(p, p)
-        for i, ax in enumerate(axs.flatten()):
+        fig, axs = bst.subplot_grid(2, 2, 4)
+        
+        proba_list = []
+        for val in p:
+            self.set_pump(p_A=val, p_B=val)
+            proba_list.append(self.get_proba())
+        proba_all = np.array(proba_list).T
+
+        for i, ax in enumerate(axs):
             proba = proba_all[i]
             name = pij_name[i]
             ax.plot(p, proba)
@@ -258,3 +270,110 @@ class LocalProbaModel():
             ax.set_ylabel(f'Proba {name}')
             ax.grid()
         return fig, axs
+
+
+
+class Visibility():
+    def __init__(self, the_elemLink: ElemLink) -> None:
+        self.elink = the_elemLink
+        self.local_proba = LocalProbaModel(the_elemLink)
+        self.eta_A = 1
+        self.eta_B = 1
+        self.dc_A = 0
+        self.dc_B = 0
+
+
+    def set_param(self, param_dict):
+        """Set parameters from dictionary."""
+        allowed_keys = ["eta_A", "eta_B", "dc_A", "dc_B"]
+        for key in param_dict:
+            if key in allowed_keys:
+                setattr(self, key, param_dict[key])
+            else:
+                warnings.warn(f"Uknown parameter: {key}.", UserWarning)
+    
+
+    def check_integrity(self):
+        #self.elink.check_integrity()
+        pass
+
+    def _get_svd(self, phi, cond):
+        """
+        Compute SVD for one term of the probability sum.
+
+        Args:
+
+        Returns:
+
+        """
+        # Get the pump parameter
+        p_A, p_B = self.elink.p_A, self.elink.p_B
+        # Get the efficiencies for the modes a,b,c and d
+        eta_b, eta_c = self.elink.eta_0, self.elink.eta_0
+        eta_a, eta_d = self.elink.eta_A * self.eta_A, self.elink.eta_B * self.eta_B
+        # Build the loss values for the modes a, b, c and d
+        cond_a, cond_b, cond_c, cond_d = cond
+        R_b, R_c = 1 - cond_c * eta_c, 1 - cond_b * eta_b
+        R_a, R_d = 1 - cond_a * eta_a, 1 - cond_d * eta_d
+        # Matrix of the modes a and d
+        print(phi)
+        M_ad = np.array([
+            [np.sqrt(p_A) * np.exp(1j * phi) * R_a,  np.sqrt(p_A) * np.exp(1j * phi) * R_d],
+            [np.sqrt(p_B) * R_a, - np.sqrt(p_B) * R_d]
+            ]) / np.sqrt(2)
+        # Matrix of the modes b and c
+        M_bc = np.array([
+            [R_b, R_b],
+            [R_c, - R_c]
+            ]) / np.sqrt(2)
+        # Matrix
+        M = np.matmul(np.transpose(M_ad), M_bc)
+        # SVD calculation
+        _, svd, _ = np.linalg.svd(M, full_matrices=True, compute_uv=True, hermitian=False)
+        return svd
+
+    def _get_darkcount(self, cond):
+        cond_a, cond_b, cond_c, cond_d = cond
+        dc_b, dc_c = self.elink.dc_0, self.elink.dc_0
+        dc_a, dc_d = self.elink.dc_A * self.dc_A, self.elink.dc_B * self.dc_B
+        kappa_b, kappa_c = 1 - cond_b * dc_b, 1 - cond_c * dc_c
+        kappa_a, kappa_d = 1 - cond_a * dc_a, 1 - cond_d * dc_d
+        return kappa_a * kappa_b * kappa_c * kappa_d
+
+    def _get_norm(self):
+        N = self.local_proba.get_p_herald()
+        return N
+
+    def _get_visibility_term(self, phi, cond):
+        sigma_p, sigma_m = self._get_svd(phi, cond)
+        return 1/(1-sigma_p) * 1/(1-sigma_m)
+        
+    def get_visibility(self, phi=0):
+        terms_dict = {
+                "term1": { # + Ra Rb
+                    "cond": [1, 1, 0, 0],
+                    "sign": 1
+                    },
+                "term2": { # - Ra Rb Rc
+                    "cond": [1, 1, 1, 0],
+                    "sign": -1
+                    },
+                "term3": { # - Ra Rb Rd
+                    "cond": [1, 1, 0, 1],
+                    "sign": -1
+                    },
+                "term4": { # + Ra Rb Rc Rd
+                    "cond": [1, 1, 1, 1],
+                    "sign": 1
+                    },
+                }
+        visibility = 0
+        for _, term in terms_dict.items():
+            cond = term["cond"]
+            sign = term["sign"]
+            darkcount = self._get_darkcount(cond)
+            visibility_term = self._get_visibility_term(phi, cond)
+            visibility += sign * darkcount * visibility_term
+        N = self._get_norm()
+        return visibility/N
+

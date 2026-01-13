@@ -2,7 +2,7 @@
 name = "q-elink"
 version = "0.1.0"
 description = "Quantum elementary link modelization."
-authors = ["bastiengrvt <bastien.grvt@proton.me>"]
+authors = ["BastienGrvt <73183679+BastienGrvt@users.noreply.github.com>"]
 readme = "README.md"
 packages = [{ include = "q_elink", from = "src" }]
 

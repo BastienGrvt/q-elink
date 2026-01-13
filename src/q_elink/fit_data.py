@@ -131,10 +131,10 @@ class FitLocalProba():
 
     # Build methods
 
-    def _build_rng(self):
-        old_rng = self.rng
-        new_rng = old_rng.spawn(1)
-        self.rng = new_rng[0]
+    # def _build_rng(self):
+    #     old_rng = self.rng
+    #     new_rng = old_rng.spawn(1)
+    #     self.rng = new_rng[0]
 
     def _build_param_name(self):
         self._fit_param_name = []
@@ -175,26 +175,24 @@ class FitLocalProba():
             Set fit parameters in the elink instance.
             The param input must follow the same order than _fit_param_name list.
             """
-        for name, value in zip(self._fit_param_name, param):
-            if name in ['dc_0', 'dc_A', 'dc_B']:
-                value = np.power(10, value)
-            setattr(self.elink, name, value) # ToDo: use the elink.set_param() method instead
+        # for name, value in zip(self._fit_param_name, param):
+        #     if name in ['dc_0', 'dc_A', 'dc_B']:
+        #         value = np.power(10, value)
+        #     setattr(self.elink, name, value) # ToDo: use the elink.set_param() method instead
+        self.elink.set_param(param, log_dc=True)
 
 
     # Initial value sampling method
 
     def _get_init_val(self):
         param_init, param_min, param_max = [], [], []
-        self._build_rng()
-        rng = self.rng
+        # NB: respawn rng not needed when sequentiel -> rng i updated after each call
+        # self._build_rng()
+        # rng = self.rng
         for param_name in self._fit_param_name:
             value = self.init_val_dict[param_name]
             param_min.append(value[0])
             param_max.append(value[1])
-            # if param_name in ['eta_0', 'eta_A', 'eta_B']:
-            #     param_init.append(rng.uniform(low=value[0], high=value[1]))
-            # elif param_name in ['dc_0', 'dc_A', 'dc_B']:
-            #     param_init.append( np.power(10, rng.uniform(low=np.log10(value[0]), high=np.log10(value[1]))) )
             if param_name in ['eta_0', 'eta_A', 'eta_B', 'dc_0', 'dc_A', 'dc_B']:
                 param_init.append(rng.uniform(low=value[0], high=value[1]))
             else:
@@ -328,8 +326,8 @@ class FitLocalProba():
         }
         for i in tqdm(range(self.n_fit)):
             result_dict["all_fit_result"][f"fit_{i}"] = worker()
-        self.result_dict = result_dict
         print("Fit ended.")
+        self.result_dict = result_dict
 
         return result_dict
 
@@ -433,6 +431,7 @@ class FitDataProcess:
         # Store data
         self.data_processed = {
             'statistics': statistics,
+            'data_exp': data_raw['data'],
             'data_init': data_init_dict,
             'data_fitted': data_fitted_dict,
             'mse_init': mse_init,
@@ -476,7 +475,115 @@ class FitDataProcess:
             json.dump(data_dict, f, cls=NpEncoder, indent=4)
 
 
-    def plot_fit(self)
+    def plot_fit(self, param_gauss={}, n_sample=1000, n_sigma=2, smooth_plot=False, seed=42):
+
+        def wrapper(p_A, p_B, local_proba):
+            local_proba.set_pump(p_A, p_B)
+            elink.check_integrity()
+            p00, p01, p10, p11 = local_proba.get_proba()
+            return p00, p01, p10, p11
+            
+        # Set elink model
+        elink = ElemLink()
+        local_proba = LocalProbaModel(elink)
+
+        # Get and build pimp parameters
+        data_processed = self.data_processed
+        data_exp = data_processed["data_exp"]
+        pij_exp_dict = data_exp["proba_data"]
+        pij_exp = np.array([pij for _, pij in pij_exp_dict.items()])
+        pij_exp = np.transpose(pij_exp) # to get pij_exp[:, i]
+        p_A, p_B = np.array(data_exp["pump_data"]["p_A"]), np.array(data_exp["pump_data"]["p_B"])
+        p_mean = (p_A + p_B)/2
+        n_exp = len(p_A)
+
+        # Set fit parameters
+        param_gauss = self.data_processed['statistics'] | param_gauss
+        param_dict = { key: float(value["mean"]) for key, value in param_gauss.items() }
+
+        # Get fit points
+        elink.set_param(param_dict, log_dc=True)
+        vect_wrapper = np.vectorize(lambda p_A, p_B: wrapper(p_A, p_B, local_proba))
+        pij_tuple = vect_wrapper(p_A, p_B)
+        pij_fit = np.column_stack(pij_tuple) 
+
+        # Monte-Carlo
+        rng = np.random.default_rng(seed)
+        data_sample = np.zeros((n_sample, n_exp, 4))
+        sample = {}
+        for i in tqdm(range(n_sample)):
+            # Sample the elink parameters
+            for param_name, param_stat in param_gauss.items():
+                mu, sigma = param_stat["mean"], param_stat["std"]
+                sample[param_name] = rng.uniform(mu - n_sigma*sigma, mu + n_sigma*sigma)
+            elink.set_param(sample, log_dc=True)
+            # Get the pij for every pump parameter
+            vect_wrapper = np.vectorize(lambda p_A, p_B: wrapper(p_A, p_B, local_proba))
+            pij_tuple = vect_wrapper(p_A, p_B)
+            pij = np.column_stack(pij_tuple)
+            data_sample[i, :, :] = pij
+
+        # Get the min/max over all the Monte-Carlo samples
+        pij_max = np.max(data_sample, axis=0)
+        pij_min = np.min(data_sample, axis=0)
+
+        # Build parameters for the plot
+        p_all = np.concatenate((p_A, p_B))
+        p_min, p_max = np.min(p_all), np.max(p_all)
+        margin = (p_max - p_min)*0.1
+        x_min = p_min - margin
+        x_max = p_max + margin
+        x_pump = np.linspace(x_min, x_max, 50)
+        subplot_name = [r'$P_{00}$', r'$P_{01}$', r'$P_{10}$', r'$P_{11}$']
+        fig, axs = bst.subplot_grid(2, 2, 4, plot_size=(5*0.9, 4*0.9), grid=True)
+
+        # Plot: smooth continious plot via extrapolation
+        if smooth_plot:
+            # Sort the p_mean for `UnivariateSpline`
+            sort_idx = np.argsort(p_mean)
+            p_mean_sorted = p_mean[sort_idx]
+            pij_fit_sorted = pij_fit[sort_idx]
+            pij_min_sorted = pij_min[sort_idx]
+            pij_max_sorted = pij_max[sort_idx] 
+            x_pump = np.linspace(x_min, x_max, 50)
+            # Span the plots
+            for i, ax in enumerate(axs):
+                # Get the min and max
+                pij_fit_col = pij_fit_sorted[:, i]
+                pij_min_col = pij_min_sorted[:, i]
+                pij_max_col = pij_max_sorted[:, i]
+                # Build the smooth function
+                spl_fit = sp.interpolate.UnivariateSpline(p_mean_sorted, pij_fit_col, k=1, s=10)
+                spl_min = sp.interpolate.UnivariateSpline(p_mean_sorted, pij_min_col, k=1, s=10)
+                spl_max = sp.interpolate.UnivariateSpline(p_mean_sorted, pij_max_col, k=1, s=10)
+                y_fit_smooth = spl_fit(x_pump)
+                y_min_smooth = spl_min(x_pump)
+                y_max_smooth = spl_max(x_pump)
+                # Plot
+                ax.fill_between(x_pump, y_min_smooth, y_max_smooth, color='gray', alpha=0.3, label=r"$2 \cdot \sigma$")
+                ax.plot(x_pump, y_fit_smooth, 'k--', label="Fit")
+                ax.plot(p_mean, pij_exp[:, i], '.', label="Data")
+                ax.set_xlabel("Pump parameter")
+                ax.set_ylabel(subplot_name[i])
+
+            handles, labels = axs[0].get_legend_handles_labels()
+            fig.legend(handles, labels, loc="lower center", ncol=len(labels), bbox_to_anchor=(0.5, -0.05))
+            # plt.tight_layout(rect=[0, 0.05, 1, 1])
+            return fig
+
+        # Plot: disctrete shots plot
+        else:
+            for i, ax in enumerate(axs):
+                y = pij_fit[:, i]
+                y_min, y_max = pij_min[:, i], pij_max[:, i]
+                yerr = [y - y_min, y_max - y]
+                ax.errorbar(p_mean, y, yerr=yerr, fmt='+', capsize=3)
+                # ax.plot(p_mean, pij_fit[;, i], 'o')
+                # ax.plot(p_mean, pij_min[:, i], 'o')
+                # ax.plot(p_mean, pij_max[:, i], '.')
+                ax.plot(p_mean, pij_exp[:, i], 'o')
+            return fig 
+
 
 
     def plot_shots(self):
@@ -489,9 +596,7 @@ class FitDataProcess:
         mse_fitted = data_processed["mse_fitted"]
         # Initialiaze the plit
         n_plot = len(data_init) + 1
-        # fig, axs = plt.subplots(n_plot + 1, 1, figsize=(6, 4 * (n_plot + 1)), squeeze=False)
-        # axs = axs.ravel()
-        fig, axs = bst.create_centered_grid(3, 3, n_plot, plot_size=(5, 4))
+        fig, axs = bst.subplots_grid(3, 3, n_plot, plot_size=(5, 4))
 
         # Plot the e-link parameters
         for i, (name, _) in enumerate(data_init.items()):
@@ -527,7 +632,7 @@ class FitDataProcess:
         n_plot = len(param_gauss)
         # fig, axs = plt.subplots(n_plot, 1, figsize=(6, 4 * n_plot), squeeze=False)
         # axs = axs.ravel()
-        fig, axs = bst.create_centered_grid(2, 3, n_plot, plot_size=(5, 4))
+        fig, axs = bst.subplot_grid(2, 3, n_plot, plot_size=(5, 4))
         # Plot the parameters
         for i, (name, _) in enumerate(param_gauss.items()):
             # Get single plot param and data
