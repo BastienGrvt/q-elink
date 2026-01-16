@@ -1,7 +1,7 @@
 from ._imports import *
 
 # Internal libs
-from .experiment import LocalProbaExperiment
+from .handler import LocalProbaExperiment
 
 # External libs
 from scipy.optimize import least_squares
