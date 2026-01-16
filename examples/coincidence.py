@@ -26,8 +26,8 @@ param_dict = {
 elink = ql.ElementaryLink()
 elink.set_param(param_dict["elink"])
 
-local_proba_coinc = ql.CoincidenceProbabilityModel(elink)
-local_proba_coinc.set_param(param_dict["coinc"])
+coinc_proba = ql.CoincidenceProbabilityModel(elink)
+coinc_proba.set_param(param_dict["coinc"])
 
 side = 'A'
-print(f"proba_coinc = {local_proba_coinc.get_proba(side)}")
+print(f"proba_coinc = {coinc_proba.get_proba(side)}")

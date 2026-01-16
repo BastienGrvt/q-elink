@@ -1,4 +1,4 @@
-from .imports import *
+from ._imports import *
 
 
 class InterferenceModel():
