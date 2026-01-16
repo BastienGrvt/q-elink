@@ -71,8 +71,6 @@ class LocalProbaExperiment():
 
 
 
-
-
 class FitResultAnalyzer:
     def __init__(self, data_raw=None):
         self.data_raw = data_raw

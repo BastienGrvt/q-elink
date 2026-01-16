@@ -1,10 +1,4 @@
-from .core import ElementaryLink
-from .local_probabilities import (
-    LocalProbabilityModel, 
-    CoincidenceProbabilityModel, 
-    ProbabilityFitter, 
-    FitResultAnalyzer,
-    LocalProbaExperiment
-)
-from .visibility import InterferenceModel
-from .witness import EntanglementWitness
+from .core import *
+from .local_probabilities import *
+from .visibility import *
+from .witness import *

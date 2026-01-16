@@ -1,9 +1,11 @@
 from ._imports import *
 
+# Internal libs
+from .experiment import LocalProbaExperiment
+
+# External libs
 from scipy.optimize import least_squares
 from scipy.stats import norm
-
-
 
 
 class ProbabilityFitter():

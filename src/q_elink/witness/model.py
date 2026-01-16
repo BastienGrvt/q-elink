@@ -1,4 +1,6 @@
 from ._imports import *
+from .local_probabilities import LocalprobabilityModel, CoincidencePorbabilityModel
+
 
 class EntanglementWitness():
     # TODO
