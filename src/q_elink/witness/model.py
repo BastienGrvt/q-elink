@@ -1,5 +1,4 @@
 from ._imports import *
-from ..local_probabilities import LocalProbabilityModel, CoincidencePorbabilityModel
 
 
 class EntanglementWitness():

@@ -1,6 +1,5 @@
 from ._imports import *
 
-
 class InterferenceModel():
     def __init__(self, the_elemLink: ElementaryLink) -> None:
         self.elink = the_elemLink
