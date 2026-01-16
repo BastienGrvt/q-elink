@@ -24,10 +24,11 @@ param_detect = {
 alpha = 0.5
 beta = -0.5
 
-elink = ql.ElemLink()
-elink.set_param(param_elink)
+# Create an instance of the ElementaryLink class
+elink = ql.ElementaryLink()
 
-local_proba = ql.LocalProbaModel(elink)
+# Create a LocalProbabilityModel for calculations
+local_proba = ql.LocalProbabilityModel(elink)
 local_proba.set_param(param_detect)
 
 proba_herald = local_proba.get_p_herald()

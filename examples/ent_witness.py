@@ -53,7 +53,8 @@ param_dict = {
         }
 
 
-ent_wit = ql.EntWitness()
+# Create an instance of the EntanglementWitness class
+ent_wit = ql.EntanglementWitness()
 ent_wit.set_param(param_dict)
 ent_wit.set_pump(p_A, p_B)
 

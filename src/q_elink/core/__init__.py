@@ -1,1 +1,1 @@
-from .link import 
+from .link import ElementaryLink

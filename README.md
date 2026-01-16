@@ -44,12 +44,12 @@ param_elink = {
     'dc_B': 1e-4,
 }
 
-# 2. Create an ElemLink instance and set its parameters
-elink = ql.ElemLink()
+# 2. Create an ElementaryLink instance and set its parameters
+elink = ql.ElementaryLink()
 elink.set_param(param_elink)
 
-# 3. Create a LocalProbaModel for calculations
-local_proba = ql.LocalProbaModel(elink)
+# 3. Create a LocalProbabilityModel for calculations
+local_proba = ql.LocalProbabilityModel(elink)
 
 # Optional: Set parameters for local detection stages
 param_detect = {
@@ -82,9 +82,10 @@ print(f"p11 (click | click)       = {p11}")
 
 The library is organized into the following main modules:
 
--   `src/q_elink/elem_link_model.py`: Contains the core data structures `ElemLink` for the quantum elementary link model and `LocalProbaModel` for calculating detection probabilities.
--   `src/q_elink/ent_witness.py`: Provides the `EntWitness` class and related tools for entanglement witnessing.
--   `src/q_elink/fit_data.py`: Contains the `FitLocalProba` class for fitting the theoretical model to experimental data.
+-   `src/q_elink/core/link.py`: Contains the core data structure `ElementaryLink` for the quantum elementary link model.
+-   `src/q_elink/local_probabilities/model.py`: Contains `LocalProbabilityModel` for calculating detection probabilities.
+-   `src/q_elink/witness/model.py`: Provides the `EntanglementWitness` class and related tools for entanglement witnessing.
+-   `src/q_elink/local_probabilities/fitter.py`: Contains the `ProbabilityFitter` class for fitting the theoretical model to experimental data.
 
 ## Running the Examples
 

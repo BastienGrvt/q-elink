@@ -1,10 +1,10 @@
 from .imports import *
 
 
-class Visibility():
-    def __init__(self, the_elemLink: ElemLink) -> None:
+class InterferenceModel():
+    def __init__(self, the_elemLink: ElementaryLink) -> None:
         self.elink = the_elemLink
-        self.local_proba = LocalProbaModel(the_elemLink)
+        self.local_proba = LocalProbabilityModel(the_elemLink)
         self.eta_A = 1
         self.eta_B = 1
         self.dc_A = 0

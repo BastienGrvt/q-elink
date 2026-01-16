@@ -1,13 +1,13 @@
 from ._imports import *
 
-class EntWitness():
+class EntanglementWitness():
     # TODO
     def __init__(self):
-        self.elink = ElemLink()
-        self.local_proba_rho = LocalProbaModel(self.elink)
-        self.local_proba_obs = LocalProbaModel(self.elink)
-        self.local_proba_coinc_A = LocalProbaCoincidence(self.elink)
-        self.local_proba_coinc_B = LocalProbaCoincidence(self.elink)
+        self.elink = ElementaryLink()
+        self.local_proba_rho = LocalProbabilityModel(self.elink)
+        self.local_proba_obs = LocalProbabilityModel(self.elink)
+        self.local_proba_coinc_A = CoincidenceProbabilityModel(self.elink)
+        self.local_proba_coinc_B = CoincidenceProbabilityModel(self.elink)
 
         self.param_dict: dict = {
                 "elink": {

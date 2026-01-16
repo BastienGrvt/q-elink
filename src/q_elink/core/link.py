@@ -1,7 +1,7 @@
 from ._imports import *
 
 @dataclass
-class ElemLink():
+class ElementaryLink():
     # pump parameters
     p_A: float = None
     p_B: float = None

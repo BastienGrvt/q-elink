@@ -73,7 +73,7 @@ class LocalProbaExperiment():
 
 
 
-class FitDataProcess:
+class FitResultAnalyzer:
     def __init__(self, data_raw=None):
         self.data_raw = data_raw
         self.data_processed = None
@@ -98,7 +98,7 @@ class FitDataProcess:
 
     def load_data_raw(self, path):
         """
-        Loads raw data JSON file from `FitLocalproba` and store it in `self.data_raw`.
+        Loads raw data JSON file from `ProbabilityFitter` and store it in `self.data_raw`.
         """
         with open(path, 'r') as f:
             data_raw = json.load(f)
@@ -108,7 +108,7 @@ class FitDataProcess:
     
     def load_data_processed(self, path):
         """
-        Loads processed data JSON file from `FitDataProcess` and store it in `self.data_processed`.
+        Loads processed data JSON file from `FitResultAnalyzer` and store it in `self.data_processed`.
         """
         with open(path, 'r') as f:
             data_processed = json.load(f)
@@ -197,8 +197,8 @@ class FitDataProcess:
             return p00, p01, p10, p11
             
         # Set elink model
-        elink = ElemLink()
-        local_proba = LocalProbaModel(elink)
+        elink = ElementaryLink()
+        local_proba = LocalProbabilityModel(elink)
 
         # Get and build pimp parameters
         data_processed = self.data_processed

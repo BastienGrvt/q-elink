@@ -23,10 +23,10 @@ param_dict = {
         }
 
 
-elink = ql.ElemLink()
+elink = ql.ElementaryLink()
 elink.set_param(param_dict["elink"])
 
-local_proba_coinc = ql.LocalProbaCoincidence(elink)
+local_proba_coinc = ql.CoincidenceProbabilityModel(elink)
 local_proba_coinc.set_param(param_dict["coinc"])
 
 side = 'A'

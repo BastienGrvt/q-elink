@@ -31,8 +31,8 @@ init_value = {
 }
 
 # Set fake data
-elink = ql.ElemLink()
-elink_model = ql.LocalProbaModel(elink) 
+elink = ql.ElementaryLink()
+elink_model = ql.LocalProbabilityModel(elink) 
 elink.set_param(default_param)
 
 def noise(x, std_ratio=0.1):
@@ -70,7 +70,7 @@ fig.savefig(f"{path}/pij_exp.png", dpi=300, bbox_inches='tight')
 
 
 # Do the fit
-fit = ql.FitLocalProba()
+fit = ql.ProbabilityFitter()
 fit.set_data(local_proba_exp)
 fit.set_init_value(init_value)
 fit.set_fit(10, pij_pond=pij_pond, relative=relative)
@@ -79,7 +79,7 @@ fit.save_result(f'{path}/fit_test.json')
 
 
 # Process the data and show
-data_process = ql.FitDataProcess()
+data_process = ql.FitResultAnalyzer()
 data_fit = data_process.load_data(f'{path}/fit_test.json')
 processed_data = data_process.build_data(data_fit)
 data_process.save_data(processed_data, f'{path}/processed_fit.json')

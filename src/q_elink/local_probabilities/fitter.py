@@ -6,7 +6,7 @@ from scipy.stats import norm
 
 
 
-class FitLocalProba():
+class ProbabilityFitter():
     def __init__(self, rng_seed = None):
         self.rng_seed = rng_seed
         self.rng = np.random.default_rng(self.rng_seed)
@@ -25,8 +25,8 @@ class FitLocalProba():
         self.gtol = 1e-08
         
         # Set the model
-        self.elink = ElemLink()
-        self.local_proba_mod = LocalProbaModel(self.elink)
+        self.elink = ElementaryLink()
+        self.local_proba_mod = LocalProbabilityModel(self.elink)
 
     # Check intergity methods
 
@@ -178,7 +178,7 @@ class FitLocalProba():
 
     # Fitting method
 
-    # def set_model(self, local_proba_mod: LocalProbaModel):
+    # def set_model(self, local_proba_mod: LocalProbabilityModel):
     #     self._check_model(local_proba_mod)
     #     self.local_proba_mod = local_proba_mod
     #     self.elink = local_proba_mod.elink

@@ -1,7 +1,7 @@
 from ._imports import *
 
-class LocalProbaModel():
-    def __init__(self, the_elemLink: ElemLink) -> None:
+class LocalProbabilityModel():
+    def __init__(self, the_elemLink: ElementaryLink) -> None:
         self.elink = the_elemLink
         self.eta_A = 1
         self.eta_B = 1
@@ -219,15 +219,15 @@ class LocalProbaModel():
 
 
 
-class LocalProbaCoincidence():
-    def __init__(self, elink: ElemLink):
+class CoincidenceProbabilityModel():
+    def __init__(self, elink: ElementaryLink):
         self.eta_T = None
         self.eta_J = None
         self.dc_T = None
         self.dc_J = None
         self.side = None
         self.elink = elink
-        self.local_proba_model = LocalProbaModel(self.elink)
+        self.local_proba_model = LocalProbabilityModel(self.elink)
 
 
     def set_param(self, param_dict):
