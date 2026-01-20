@@ -84,8 +84,8 @@ The library is organized into the following main modules:
 
 -   `src/q_elink/core/link.py`: Contains the core data structure `ElementaryLink` for the quantum elementary link model.
 -   `src/q_elink/local_probabilities/model.py`: Contains `LocalProbabilityModel` and `CoincidenceProbabilityModel` for calculating detection probabilities and coincidences.
--   `src/q_elink/local_probabilities/fitter.py`: Contains `LocalProbabilityFitter` and `LocalProbabilityExperiment` classes for fitting the theoretical model to experimental data.
--   `src/q_elink/local_probabilities/handler.py`: Contains `FitResultAnalyzer` for processing and analyzing fit results.
+-   `src/q_elink/local_probabilities/fitter.py`: Contains the `ProbabilityFitter` class for fitting the theoretical model to experimental data.
+-   `src/q_elink/local_probabilities/experiment.py`: Contains `FitResultAnalyzer` for processing and analyzing fit results.
 -   `src/q_elink/visibility/model.py`: Contains `InterferenceModel` for visibility and interference calculations.
 -   `src/q_elink/witness/model.py`: Provides the `EntanglementWitness` class and related tools for entanglement witnessing.
 
@@ -95,17 +95,12 @@ The `examples/` directory contains scripts that demonstrate various features of 
 
 For example, to run the elementary link example:
 ```bash
-poetry run python examples/elementary_link/elemnetary_link.py
+poetry run python examples/elem_link.py
 ```
 
 To run the coincidence measurement example:
 ```bash
-poetry run python examples/local_proba/proba_coincidence.py
-```
-
-To run the local probability fitting example:
-```bash
-poetry run python examples/local_proba/fit_proba.py
+poetry run python examples/coincidence.py
 ```
 
 ## Core Dependencies

@@ -14,6 +14,33 @@ class ElementaryLink():
     dc_A: float = None
     dc_B: float = None
 
+
+    def show(self, console=None):
+        """Show the dataclass in a concise fancy way"""
+        table = Table(title="Elementary Link Parameters", show_header=True, header_style="bold magenta")
+
+        table.add_column("Parameter", justify="left", style="cyan", no_wrap=True)
+        table.add_column("Alice (A)", justify="center")
+        table.add_column("Bob (B)", justify="center")
+        table.add_column("Common (0)", justify="center")
+
+        def fmt(val):
+            return f"{val:.2e}" if val is not None else "[italic red]None[/italic red]"
+
+        table.add_row("Pump (p)", fmt(self.p_A), fmt(self.p_B), "-")
+        table.add_row("Efficiency (η)", fmt(self.eta_A), fmt(self.eta_B), fmt(self.eta_0))
+        table.add_row("Dark count (dc)", fmt(self.dc_A), fmt(self.dc_B), fmt(self.dc_0))
+
+        panel = Panel(table, title="[bold]Elementary Link Configuration[/bold]", border_style="red", expand=False)
+
+        if console is None:
+            console = Console()
+            console.print(panel)
+        elif console is not False:
+            console.print(panel)
+            
+        return panel
+
     def set_param(self, param_dict, log_dc=False):
         """
             Set elementary link parameters from input dictionary.
@@ -25,12 +52,12 @@ class ElementaryLink():
             # Assymetric parameters
             if key in allowed_keys_ass:
                 if log_dc and key in log_keys:
-                    value = np.power(10, value)
+                    value = np.power(10.0, value)
                 setattr(self, key, value)
             # Symmetric parameters
             elif key in allowed_keys_sym:
                 if log_dc and key in log_keys:
-                    value = np.power(10, value)
+                    value = np.power(10.0, value)
                 setattr(self, key+"_A", value)
                 setattr(self, key+"_B", value)
             # Key not known

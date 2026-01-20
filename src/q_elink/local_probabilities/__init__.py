@@ -1,3 +1,3 @@
 from .model import LocalProbabilityModel, CoincidenceProbabilityModel
-from .fitter import ProbabilityFitter
-from .handler import LocalProbaExperiment, FitResultAnalyzer
+from .fitter import LocalProbabilityExperiment, LocalProbabilityFitter
+from .handler import FitResultAnalyzer

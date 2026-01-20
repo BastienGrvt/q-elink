@@ -9,8 +9,46 @@ class LocalProbabilityModel():
         self.dc_B = 0
 
 
+    def show(self, console=None):
+        """
+        Show the Local Probability Model parameters (method generated with vibe-coding)
+        """
+        # Get elink table
+        elink_table = self.elink.show(console=False)
+
+        # Show Local Probablity parameters
+        table = Table(title="Local Probability Model Parameters", show_header=True, header_style="bold magenta")
+        table.add_column("Parameter", justify="left", style="cyan", no_wrap=True)
+        table.add_column("Alice (A)", justify="center")
+        table.add_column("Bob (B)", justify="center")
+
+        def fmt(val):
+            return f"{val:.2e}" if val is not None else "[italic red]None[/italic red]"
+
+        table.add_row("Efficiency (η)", fmt(self.eta_A), fmt(self.eta_B))
+        table.add_row("Dark count (dc)", fmt(self.dc_A), fmt(self.dc_B))
+        
+        group = Group(
+            elink_table,
+            Rule(style="dim"),
+            table
+        )
+        
+        panel = Panel(group, title="[bold]Local Probability Model Configuration[/bold]", border_style="blue", expand=False)
+        
+        if console is None:
+            console = Console()
+            console.print(panel)
+        elif console is not False:
+            console.print(panel)
+            
+        return panel
+
+
     def set_param(self, param_dict):
-        """Set parameters from dictionary."""
+        """
+        Set parameters from dictionary.
+        """
         allowed_keys = ["eta_A", "eta_B", "dc_A", "dc_B"]
         for key in param_dict:
             if key in allowed_keys:
@@ -22,7 +60,7 @@ class LocalProbabilityModel():
         self._set_not_none(self.elink, p_A=p_A, p_B=p_B)
 
     def check_integrity(self):
-        #self.elink.check_integrity()
+        self.elink.check_integrity()
         pass
 
     def _set_not_none(self, class_parent, **kwargs):
@@ -199,7 +237,7 @@ class LocalProbabilityModel():
         pij_name = [r'$P_{00}$', r'$P_{01}$', r'$P_{10}$', r'$P_{11}$']
         p_min, p_max = p_bound
         p = np.linspace(p_min, p_max, n)
-        fig, axs = bst.subplot_grid(2, 2, 4)
+        fig, axs = bst.subplots_grid(2, 2, 4)
         
         proba_list = []
         for val in p:
@@ -228,6 +266,44 @@ class CoincidenceProbabilityModel():
         self.side = None
         self.elink = elink
         self.local_proba_model = LocalProbabilityModel(self.elink)
+
+
+    def show(self, console=None):
+        """Show the Coincidence Probability Model parameters in a concise fancy way"""
+        # Get local probability panel (which already contains elink)
+        lp_panel = self.local_proba_model.show(console=False)
+
+        # Show coincidence probability parameters
+        side_val = self.side if self.side is not None else "None"
+        side_color = "green" if self.side is not None else "red"
+        table = Table(title=f"Coincidence Probability Model Parameters (Side: [{side_color}]{side_val}[/{side_color}])", 
+                      show_header=True, header_style="bold magenta")
+
+        table.add_column("Parameter", justify="left", style="cyan", no_wrap=True)
+        table.add_column("Path T", justify="center")
+        table.add_column("Path J", justify="center")
+
+        def fmt(val):
+            return f"{val:.2e}" if val is not None else "[italic red]None[/italic red]"
+
+        table.add_row("Efficiency (η)", fmt(self.eta_T), fmt(self.eta_J))
+        table.add_row("Dark count (dc)", fmt(self.dc_T), fmt(self.dc_J))
+
+        group = Group(
+            lp_panel,
+            Rule(style="dim"),
+            table
+        )
+
+        panel = Panel(group, title="[bold]Coincidence Probability Model Configuration[/bold]", border_style="green", expand=False)
+
+        if console is None:
+            console = Console()
+            console.print(panel)
+        elif console is not False:
+            console.print(panel)
+
+        return panel
 
 
     def set_param(self, param_dict):
@@ -352,6 +428,6 @@ class CoincidenceProbabilityModel():
         """Get all the probabilities.
 
         Returns:
-            tuple: Tuple of probabilities (P00, P01, P10, P11, P_herald).
+            tuple: Tuple of probabilities (P00, P01, P10, P11).
         """
         return self.get_p00(side), self.get_p01(side), self.get_p10(side), self.get_p11(side)

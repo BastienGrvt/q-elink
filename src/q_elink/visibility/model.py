@@ -128,7 +128,7 @@ class InterferenceModel():
     def plot_proba_coincidence(self, phi_bound=(-np.pi, np.pi), N=50, perturbative=True, param_dict=None):
         X = np.linspace(*phi_bound, N)
         if param_dict is None:
-            fig, axs = bst.subplot_grid(1, 1, 1)
+            fig, axs = bst.subplots_grid(1, 1, 1)
             Y = [ self.get_proba_coincidence(x) for x in X ]
             axs[0].plt(X, Y)
         # else:

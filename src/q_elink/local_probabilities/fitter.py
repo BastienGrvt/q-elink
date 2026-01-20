@@ -1,14 +1,85 @@
 from ._imports import *
 
 # Internal libs
-from .handler import LocalProbaExperiment
+from .model import LocalProbabilityModel
 
 # External libs
 from scipy.optimize import least_squares
 from scipy.stats import norm
 
 
-class ProbabilityFitter():
+
+@dataclass
+class LocalProbabilityExperiment():
+    pump_dict: dict = None
+    proba_dict: dict = None
+
+    def set_proba(self, proba_dict: dict):
+        """ Set local probabilities from experiment """
+        self._check_proba_dict(proba_dict)
+        self.proba_dict = proba_dict
+
+    def set_pump(self, pump_dict: dict):
+        """ Set pump parameters from experiment """
+        self._check_pump_dict(pump_dict)
+        self.pump_dict = pump_dict
+    
+    def show_data(self):
+        """Prints the stored variables."""
+        print("Variables stored in this LocalProbabilityExperiment instance:")
+        print(f"  pump_dict: {self.pump_dict}")
+        print(f"  proba_dict: {self.proba_dict}")
+    
+    def plot_data(self):
+        """
+        Plots the experimental probabilities p00, p01, p10, and p11 
+        as a function of the mean pump parameter (p_A + p_B) / 2.
+
+        Returns:
+            matplotlib.figure.Figure: The matplotlib figure object with the subplots.
+        """
+        self._check_data_integrity()
+
+        x_values = (np.array(self.pump_dict["p_A"]) + np.array(self.pump_dict["p_B"])) / 2
+        
+        fig, axs = plt.subplots(2, 2, figsize=(10, 8))
+        fig.suptitle("experimental probabilities according to the mean pump parameter")
+
+        for ax, pij_key in zip(axs.flat, ["p00", "p01", "p10", "p11"]):
+            ax.plot(x_values, self.proba_dict[pij_key], '+')
+            ax.set_title(pij_key)
+            ax.grid(True)
+            ax.set_xlabel("Pump parameter")
+            ax.set_ylabel(pij_key)
+
+        plt.tight_layout(rect=[0, 0, 1, 0.96])
+        return fig, axs
+
+    def check_integrity(self):
+        self._check_data_integrity()
+
+
+    def _check_pump_dict(self, pump_dict):
+        """ ToDo """
+        pass
+
+    def _check_proba_dict(self, proba_dict):
+        """ ToDo """
+        pass
+        
+    def _check_data_integrity(self):
+        """ Check data integrity (data has been set + pump and proba coincide)"""
+        if self.pump_dict is None or self.proba_dict is None:
+            raise ValueError("Please set the data with `set_pump()` and `set_proba()` first.")
+        _n_data = len(self.pump_dict["p_A"])
+        for key in self.proba_dict:
+            value = self.proba_dict[key]
+            if len(value) != _n_data:
+                raise ValueError(f"The `{key}` must be the same length than the pump parameter data.")
+        
+
+
+class LocalProbabilityFitter():
     def __init__(self, rng_seed = None):
         self.rng_seed = rng_seed
         self.rng = np.random.default_rng(self.rng_seed)
@@ -107,33 +178,23 @@ class ProbabilityFitter():
         """ 
             Set fit parameters in the elink instance.
             The param input must follow the same order than _fit_param_name list.
-            """
-        # for name, value in zip(self._fit_param_name, param):
-        #     if name in ['dc_0', 'dc_A', 'dc_B']:
-        #         value = np.power(10, value)
-        #     setattr(self.elink, name, value) # ToDo: use the elink.set_param() method instead
-        self.elink.set_param(param, log_dc=True)
-
-
-    # Initial value sampling method
+        """
+        param_dict = { name: value for name, value in zip(self._fit_param_name, param) }
+        self.elink.set_param(param_dict, log_dc=True)
 
     def _get_init_val(self):
         param_init, param_min, param_max = [], [], []
         # NB: respawn rng not needed when sequentiel -> rng i updated after each call
-        # self._build_rng()
-        # rng = self.rng
         for param_name in self._fit_param_name:
             value = self.init_val_dict[param_name]
             param_min.append(value[0])
             param_max.append(value[1])
             if param_name in ['eta_0', 'eta_A', 'eta_B', 'dc_0', 'dc_A', 'dc_B']:
-                param_init.append(rng.uniform(low=value[0], high=value[1]))
+                param_init.append(self.rng.uniform(low=value[0], high=value[1]))
             else:
                 raise ValueError(f"Fitting parameter {param_name} not available account.")
         return param_init, param_min, param_max 
 
-
-    # Fitting and residual function (worker function)
 
     def _get_mod_mat(self, param):
         """
@@ -178,14 +239,7 @@ class ProbabilityFitter():
             self._fit_param_name = buffer
         return np.sqrt(np.sum(residus**2))
 
-    # Fitting method
-
-    # def set_model(self, local_proba_mod: LocalProbabilityModel):
-    #     self._check_model(local_proba_mod)
-    #     self.local_proba_mod = local_proba_mod
-    #     self.elink = local_proba_mod.elink
-
-    def set_data(self, local_proba_exp: LocalProbaExperiment):
+    def set_data(self, local_proba_exp: LocalProbabilityExperiment):
         self._check_exp_integrity()
         self.local_proba_exp = local_proba_exp
         self._p_A = local_proba_exp.pump_dict["p_A"]
