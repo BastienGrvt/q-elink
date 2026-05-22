@@ -5,9 +5,9 @@ import os
 
 # Path for data
 suffix = "synth"
-path_root = "examples/dataset/local_proba"
-os.makedirs(f"{path_root}/fit", exist_ok=True)
-os.makedirs(f"{path_root}/fig", exist_ok=True)
+path_root = "examples/dataset/local_proba/"
+path_fit = f"{path_root}/fit/"
+path_fit = f"{path_root}/fig/"
 
 
 # Set fit param
@@ -82,7 +82,7 @@ local_proba_exp = ql.LocalProbabilityExperiment()
 local_proba_exp.set_proba(data_proba_synth_noisy)
 local_proba_exp.set_pump(data_pump_synth)
 fig, axs = local_proba_exp.plot_data()
-fig.savefig(f"{path_root}/fig/fig_pij_{suffix}.png", dpi=300, bbox_inches='tight')
+fig.savefig(f"{path_ig}/fig_pij_{suffix}.png", dpi=300, bbox_inches='tight')
 
 
 # Fit the data
@@ -91,4 +91,4 @@ fit.set_data(local_proba_exp)
 fit.set_init_value(init_value)
 fit.set_fit(n_fit, pij_pond=pij_pond, relative=relative)
 result_fit = fit.fit()
-fit.save_result(f'{path_root}/fit/fit_{suffix}_raw.json')
+fit.save_result(f'{path_fit}/fit_{suffix}_raw.json')

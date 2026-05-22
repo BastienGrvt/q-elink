@@ -84,11 +84,27 @@ class FitResultAnalyzer:
         else:
             raise ValueError("Please first build the processed data with `build_data()`.")
 
-    def get_stat(self):
+    def get_fitted_param(self):
         if self.data_processed is not None:
             return self.data_processed['statistics']
         else:
             raise ValueError("Please first build the processed data with `build_data()`.")
+
+    def show_fitted_param(self):
+        self._check_processed_integrity()
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Parameter", style="cyan")
+        table.add_column("Mean", justify="right", style="green")
+        table.add_column("Std Dev", justify="right", style="dim")
+
+        for name, stats in self.data_processed['statistics'].items():
+            table.add_row(
+                name,
+                f"{stats['mean']:.4e}",
+                f"{stats['std']:.4e}"
+            )
+        
+        print(Panel(table, title="[bold blue]Fitted Parameters Statistics[/bold blue]", expand=False))
 
     def save_data(self, save_path):
         """
@@ -140,7 +156,6 @@ class FitResultAnalyzer:
         # Set fit parameters
         param_gauss = self.data_processed['statistics'] | param_gauss
         param_dict = { key: float(value["mean"]) for key, value in param_gauss.items() }
-        print(param_gauss)
 
         # Get fit points
         elink.set_param(param_dict, log_dc=True)
@@ -238,7 +253,7 @@ class FitResultAnalyzer:
         mse_fitted = data_processed["mse_fitted"]
         # Initialiaze the plit
         n_plot = len(data_init) + 1
-        fig, axs = bst.subplots_grid(3, 3, n_plot, plot_size=(5, 4))
+        fig, axs = bst.subplots_grid(3, 3, n_plot, plot_size=(5, 4), grid=True)
 
         # Plot the e-link parameters
         for i, (name, _) in enumerate(data_init.items()):
@@ -252,7 +267,6 @@ class FitResultAnalyzer:
             ax.set_xlabel("$N$", fontsize=14)
             ax.set_title(f"Fit of {name}")
             ax.legend(loc=1) 
-            ax.grid()
         # Plot MSE
         axs[-1].plot(mse_init, 'k+', label="initial")
         axs[-1].plot(mse_fitted, '+', color='darkorange', label="fit")
@@ -260,7 +274,6 @@ class FitResultAnalyzer:
         axs[-1].set_xlabel("$N$", fontsize=14)
         axs[-1].set_ylabel("MSE", fontsize=14)
         axs[-1].legend(loc=1)
-        axs[-1].grid()
         return fig, axs
         
     # Build and plot histogram function
@@ -290,7 +303,7 @@ class FitResultAnalyzer:
         n_plot = len(param_gauss)
         # fig, axs = plt.subplots(n_plot, 1, figsize=(6, 4 * n_plot), squeeze=False)
         # axs = axs.ravel()
-        fig, axs = bst.subplots_grid(2, 3, n_plot, plot_size=(5, 4))
+        fig, axs = bst.subplots_grid(2, 3, n_plot, plot_size=(5, 4), grid=True)
         # Plot the parameters
         for i, (name, _) in enumerate(param_gauss.items()):
             # Get single plot param and data
@@ -322,6 +335,5 @@ class FitResultAnalyzer:
             ax.set_xlabel(plot_name, fontsize=14)
             ax.set_title(f"Fit of {plot_name}")
             ax.legend(loc=1)
-            ax.grid()
         return fig, axs
 

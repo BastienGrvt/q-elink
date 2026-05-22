@@ -1,6 +1,10 @@
-# Files
-GEMINI.md
-__pycache__
-
-# Folders
+# Data and figures
+fig/
+*.png
 tmp/
+
+# Python / Poetry Cache
+__pycache__/
+*.pyc
+poetry.lock
+

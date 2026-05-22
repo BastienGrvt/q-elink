@@ -102,12 +102,14 @@ class EntanglementWitness():
 
 
     def set_param(self, new_param): 
+
         def recursive_update(default_dict, new_val):
                 for key, val in new_val.items():
                     if isinstance(val, dict):
                         recursive_update(default_dict[key], val)
                     else:
                         default_dict[key] = val
+
         recursive_update(self.input_param, new_param)
 
     def get_param(self):
@@ -230,6 +232,8 @@ class EntanglementWitness():
         # Get the 2-photons boundaries
         p_bound_A = 2*self.local_proba_coinc_A.get_p11('A')
         p_bound_B = 2*self.local_proba_coinc_B.get_p11('B')
+        print(p_bound_A)
+        print(p_bound_B)
         p_bound_AB = p_bound_A + p_bound_B
         # Get the coefficientefficiency
         eta_wppt_A = self.param_dict["coef"]["eta_A"]
