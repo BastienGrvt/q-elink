@@ -1,4 +1,5 @@
 from ._imports import *
+from matplotlib import colors, cm
 
 
 class EntanglementWitness():
@@ -232,8 +233,8 @@ class EntanglementWitness():
         # Get the 2-photons boundaries
         p_bound_A = 2*self.local_proba_coinc_A.get_p11('A')
         p_bound_B = 2*self.local_proba_coinc_B.get_p11('B')
-        print(p_bound_A)
-        print(p_bound_B)
+        # print(p_bound_A)
+        # print(p_bound_B)
         p_bound_AB = p_bound_A + p_bound_B
         # Get the coefficientefficiency
         eta_wppt_A = self.param_dict["coef"]["eta_A"]
@@ -291,18 +292,19 @@ class EntanglementWitness():
                 param_y = Y[i, j]
                 Z[i, j] = self.get_witness(param_x, param_y)
         z_min, z_max = (np.min(Z), np.max(Z))
-        print(f"z_min = {z_min} \nz_max = {z_max}")
+        # print(f"z_min = {z_min} \nz_max = {z_max}")
         z_min, z_max = (min(z_min, 0), 0) if mask else (z_min, z_max)
         
         cmap = plt.get_cmap('viridis_r')
         normalizer = colors.Normalize(vmin=z_min, vmax=z_max)
         fig, ax = plt.subplots(1, layout="constrained")
-        cs = ax.contourf(X, Y, Z, levels=N_lvl, cmap=cmap, norm=normalizer)
+        cs = ax.contourf(X, Y, Z, levels=N_lvl, cmap=cmap, norm=normalizer, antialiased=True)
+        # cs = ax.pcolormesh(X, Y, Z, cmap=cmap, norm=normalizer,shading='gouraud')
         ax.set_xlabel(r'Alpha', fontsize=12)
         ax.set_ylabel(r'Beta', fontsize=12)
         ax.grid()
         ccf = cm.ScalarMappable(norm=normalizer, cmap=cmap)
         cbar = fig.colorbar(ccf, ax=ax)
-        cbar.set_label('$w_{ppt}-<W>$')
+        cbar.set_label('$w_{ppt}-<\mathcal{O}>$')
         return fig
 

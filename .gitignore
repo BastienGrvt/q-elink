@@ -1,10 +1,15 @@
 # Data and figures
 fig/
 *.png
+*.pdf
+*.svg
 tmp/
+repomix-*.xml
 
 # Python / Poetry Cache
 __pycache__/
 *.pyc
-poetry.lock
-
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
