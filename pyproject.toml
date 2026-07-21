@@ -16,6 +16,10 @@ dependencies = [
     "bastools>=0.1.1",
 ]
 
+[project.urls]
+Homepage = "https://github.com/BastienGrvt/q-elink"
+Issues = "https://github.com/BastienGrvt/q-elink/issues"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
