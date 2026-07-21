@@ -1,6 +1,6 @@
 [project]
 name = "q-elink"
-version = "0.1.0"
+version = "0.1.1"
 description = "Numerical characterization of an elementary link of a quantum repeater: local probabilities, visibility, entanglement witness, etc."
 authors = [{ name = "Bastien Grivet", email = "73183679+BastienGrvt@users.noreply.github.com" }]
 readme = "README.md"
