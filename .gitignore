@@ -1,15 +1,51 @@
-# Data and figures
-fig/
-*.png
-*.pdf
-*.svg
+# uv local overrides
+uv.toml
+
+# Byte-compiled
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Packageing
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Environments
+.venv/
+venv/
+env/
+.env
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Type checkers
+.mypy_cache/
+.ruff_cache/
+.pyright/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# AI assistants
+.gemini/
+.claude/
+CLAUDE.md
+
+# Others...
+local/
 tmp/
 repomix-*.xml
-
-# Python / Poetry Cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.pytest_cache/
-.mypy_cache/
