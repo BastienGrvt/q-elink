@@ -229,7 +229,7 @@ class LocalProbabilityModel():
         """Get all the probabilities.
 
         Returns:
-            tuple: Tuple of probabilities (P00, P01, P10, P11, P_herald).
+            tuple: Tuple of probabilities (P00, P01, P10, P11).
         """
         return self.get_p00(alpha, beta), self.get_p01(alpha, beta), self.get_p10(alpha, beta), self.get_p11(alpha, beta)
 

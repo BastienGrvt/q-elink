@@ -12,18 +12,34 @@ A Python library for the modelization of quantum elementary links. It provides t
 
 ## Installation
 
-This project uses [Poetry](https://python-poetry.org/) for dependency management.
+### From PyPI
+
+Using [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv add q-elink
+```
+
+Or with pip:
+
+```bash
+pip install q-elink
+```
+
+### From source
+
+For development or to run the examples:
 
 1.  Clone the repository:
-    ```bash
+```bash
     git clone https://github.com/your-username/q-elink.git
     cd q-elink
-    ```
+```
 
-2.  Install dependencies using Poetry:
-    ```bash
-    poetry install
-    ```
+2.  Install dependencies using uv:
+```bash
+    uv sync
+```
 
 ## Basic Usage
 
@@ -91,21 +107,25 @@ The library is organized into the following main modules:
 
 ## Running the Examples
 
-The `examples/` directory contains scripts that demonstrate various features of the library. To run an example, use `poetry run`.
+The `examples/` directory contains scripts that demonstrate various features of the library. Each example is meant to be run as-is from the repository root with `uv run`.
 
 For example, to run the elementary link example:
 ```bash
-poetry run python examples/elementary_link/elemnetary_link.py
+uv run python examples/elementary_link/elemnetary_link.py
 ```
 
 To run the coincidence measurement example:
 ```bash
-poetry run python examples/local_proba/proba_coincidence.py
+uv run python examples/local_proba/proba_coincidence.py
 ```
 
-To run the local probability fitting example:
+To run the local probability fitting example, first generate a synthetic
+dataset (written to `local/dataset/`), then fit and analyze it (figures are
+written to `local/fig/`):
 ```bash
-poetry run python examples/local_proba/fit_proba.py
+uv run python examples/dataset/create_dataset_local_proba.py
+uv run python examples/local_proba/fit_proba.py
+uv run python examples/local_proba/fit_analyzer.py
 ```
 
 ## Core Dependencies

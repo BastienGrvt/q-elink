@@ -130,7 +130,9 @@ class InterferenceModel():
         if param_dict is None:
             fig, axs = bst.subplots_grid(1, 1, 1)
             Y = [ self.get_proba_coincidence(x) for x in X ]
-            axs[0].plt(X, Y)
+            axs[0].plot(X, Y)
+        else:
+            raise NotImplementedError("Sweeping a parameter via `param_dict` is not implemented yet.")
         # else:
         #
         #     def foo(x, param):
