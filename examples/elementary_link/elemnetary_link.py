@@ -20,3 +20,7 @@ elink.set_param(param_elink)
 
 # Show the link status
 elink.show()
+
+# Compute the exact fidelity of the heralded link state
+fidelity = ql.FidelityModel(elink).get_fidelity()
+print(f"Link fidelity: {fidelity:.4f}")
