@@ -6,6 +6,7 @@ A Python library for the modelization of quantum elementary links. It provides t
 
 - **Quantum Elementary Link Modeling**: Core classes to define and parameterize a quantum elementary link.
 - **Local Probability Calculation**: Compute heralded and local detection probabilities.
+- **Fidelity Calculation**: Compute the exact fidelity of the heralded link state.
 - **Entanglement Witnessing**: Tools for entanglement witnessing analysis.
 - **Data Fitting**: Functionality to fit the theoretical model to experimental data.
 - **Visualization**: Built-in plotting functions to visualize results.
@@ -89,7 +90,11 @@ print(f"p01 (no-click | click)    = {p01}")
 print(f"p10 (click | no-click)    = {p10}")
 print(f"p11 (click | click)       = {p11}")
 
-# 6. Plot the probabilities against pump values
+# 6. Compute the exact fidelity of the heralded link state
+fidelity = ql.FidelityModel(elink).get_fidelity()
+print(f"Link fidelity: {fidelity:.4f}")
+
+# 7. Plot the probabilities against pump values
 # fig, ax = local_proba.plot_proba()
 # fig.show()
 ```
@@ -103,6 +108,7 @@ The library is organized into the following main modules:
 -   `src/q_elink/local_probabilities/fitter.py`: Contains `LocalProbabilityFitter` and `LocalProbabilityExperiment` classes for fitting the theoretical model to experimental data.
 -   `src/q_elink/local_probabilities/handler.py`: Contains `FitResultAnalyzer` for processing and analyzing fit results.
 -   `src/q_elink/visibility/model.py`: Contains `InterferenceModel` for visibility and interference calculations.
+-   `src/q_elink/fidelity/model.py`: Contains `FidelityModel` for computing the exact fidelity of the heralded link state.
 -   `src/q_elink/witness/model.py`: Provides the `EntanglementWitness` class and related tools for entanglement witnessing.
 
 ## Running the Examples

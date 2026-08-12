@@ -1,6 +1,6 @@
 [project]
 name = "q-elink"
-version = "0.1.1"
+version = "0.1.2"
 description = "Numerical characterization of an elementary link of a quantum repeater: local probabilities, visibility, entanglement witness, etc."
 authors = [{ name = "Bastien Grivet", email = "73183679+BastienGrvt@users.noreply.github.com" }]
 readme = "README.md"
@@ -23,6 +23,9 @@ Issues = "https://github.com/BastienGrvt/q-elink/issues"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.uv]
+package = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/q_elink"]
